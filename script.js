@@ -208,42 +208,6 @@ map.on('load', () => {
     }
   })
 
-  // insertLayer({
-  //   id: 'zcta-demand-fill',
-  //           type: 'fill',
-  //           source: './zcta_base_boundaries.geojson',
-  //           paint: {
-  //               'fill-color': colorExpression,
-  //               // Dynamically change opacity based on interactive feature-state hooks
-  //               'fill-opacity': [
-  //                   'case',
-  //                   ['boolean', ['feature-state', 'hover'], false],
-  //                   0.95, // Fully opaque on hover
-  //                   0.70  // Translucent baseline resting rate
-  //               ]
-  //           }
-  // });
-
-  // insertLayer({
-  //    id: 'zcta-demand-outline',
-  //           type: 'line',
-  //           source: 'zcta-boundaries',
-  //           paint: {
-  //               'line-color': [
-  //                   'case',
-  //                   ['boolean', ['feature-state', 'hover'], false],
-  //                   '#222222', // Dark prominent stroke on hover
-  //                   '#ffffff'  // Subtle white baseline border boundary
-  //               ],
-  //               'line-width': [
-  //                   'case',
-  //                   ['boolean', ['feature-state', 'hover'], false],
-  //                   2.5, // Thick stroke on active hover
-  //                   0.5  // Fine line resting width
-  //               ]
-  //           }
-  // });
-
   const control = document.createElement('div');
   control.className = 'mapboxgl-ctrl mapboxgl-ctrl-group';
   control.style.fontFamily = 'sans-serif';
@@ -270,6 +234,10 @@ map.on('load', () => {
     <label style="display:flex; align-items:center; font-size:0.95rem; margin-bottom:6px;">
       <input type="checkbox" id="toggle-land-use" checked style="margin-right:6px;" />
       Land Use Density
+    </label>
+    <label style="display:flex; align-items:center; font-size:0.95rem; margin-bottom:6px;">
+      <input type="checkbox" id="toggle-bike-trips" checked style="margin-right:6px;" />
+      Bike Trip Demand
     </label>
     <div style="font-size:0.9rem; margin-top:8px;">
       <strong>Outside CitiBike Network</strong>
@@ -298,6 +266,14 @@ map.on('load', () => {
   document.getElementById('toggle-land-use').addEventListener('change', (event) => {
     map.setLayoutProperty(
       'land-use-fill',
+      'visibility',
+      event.target.checked ? 'visible' : 'none'
+    );
+  });
+
+  document.getElementById('toggle-bike-trips').addEventListener('change', (event) => {
+    map.setLayoutProperty(
+      'bike-trips',
       'visibility',
       event.target.checked ? 'visible' : 'none'
     );
