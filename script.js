@@ -16,6 +16,12 @@ const map = new mapboxgl.Map({
   },
   center: [-74.01755, 40.70304],
   zoom: 10,
+  minZoom: 10, // Making sure users can't zoom out too far past the NYC area
+  maxZoom: 15,
+  maxBounds: [
+    [-75, 40],
+    [-73.5, 41]
+  ],
   bearing: 0.00,
   pitch: 0.00,
 });
@@ -72,6 +78,7 @@ map.on('load', () => {
     id: 'outside-citibike-fill',
     type: 'fill',
     source: 'outside-citibike',
+    slot: 'bottom',
     layout: {
       visibility: 'visible'
     },
@@ -99,7 +106,7 @@ map.on('load', () => {
     type: 'fill',
     source: 'land-use',
     filter: nycZipcodeFilter,
-    slot: 'line',
+    slot: 'bottom',
     layout: {
       visibility: 'visible'
     },
