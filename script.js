@@ -47,6 +47,11 @@ map.on('load', () => {
     data: './land_use_by_zip.geojson'
   });
 
+  map.addSource('bike-trips', {
+    type: 'geojson',
+    data: './non_citibike_bike_demand.geojson'
+  });
+   
   const firstSymbolLayer = map.getStyle().layers.find(layer => layer.type === 'symbol');
   const insertBeforeLayer = firstSymbolLayer ? firstSymbolLayer.id : undefined;
   const insertLayer = (layerSpec) => {
@@ -106,31 +111,39 @@ map.on('load', () => {
     type: 'fill',
     source: 'land-use',
     filter: nycZipcodeFilter,
-    slot: 'bottom',
+    slot: 'line',
     layout: {
       visibility: 'visible'
     },
     paint: {
       'fill-color': [
         'interpolate',
-        ['linear'],
+        ['exponential', 1.2],
         ['get', 'avg_far'],
-        0, '#fff3cd',      // Very light orange (low density)
-        2, '#ffd966',      // Light orange
-        5, '#ffb84d',      // Medium orange
-        8, '#ff9900',      // Orange
-        12, '#ff7700',     // Dark orange
-        31.51, '#cc4400'   // Dark red-orange (high density)
+        0, '#fff8e1',
+        0.5, '#ffe4a6',
+        1.0, '#ffd966',
+        2.0, '#ffbf5d',
+        4.0, '#ff9c33',
+        7.0, '#ff7a14',
+        12.0, '#ff5213',
+        18.0, '#e63e0d',
+        31.51, '#b32600'
       ],
       'fill-opacity': [
         'interpolate',
-        ['linear'],
+        ['exponential', 1.5],
         ['get', 'avg_far'],
         0, 0.85,
+        1.0, 0.72,
+        2.0, 0.58,
+        4.0, 0.45,
+        8.0, 0.32,
+        15.0, 0.24,
         31.51, 0.18
       ],
       'fill-outline-color': '#999999',
-      'fill-outline-width': 1,
+      'fill-outline-width': 3,
       'fill-antialias': true
     }
   });
@@ -151,6 +164,85 @@ map.on('load', () => {
       'circle-opacity': 0.7
     }
   });
+
+  insertLayer({
+    id: 'bike-trips',
+    type: 'fill',
+    source: 'bike-trips',
+    slot: 'line',
+    layout: {
+      visibility: 'visible'
+    },
+    paint: {
+      'fill-color': [
+        'interpolate',
+        ['exponential', 1.5],
+        ['get', 'distributed_trips'],
+        0, '#e0f7fa',
+        8, '#b2ebf2',
+        16, '#80deea',
+        32, '#4dd0e1',
+        64, '#26c6da',
+        128, '#00bcd4',
+        256, '#00acc1',
+        512, '#0097a7',
+        1024, '#00838f'
+      ],
+      'fill-opacity': [
+        'interpolate',
+        ['exponential', 1.5],
+        ['get', 'distributed_trips'],
+        0, 0.85,
+        8, 0.72,
+        16, 0.58,
+        32, 0.45,
+        64, 0.32,
+        128, 0.24,
+        256, 0.18,
+        512, 0.12,
+        1024, 0.08
+      ],
+      'fill-outline-color': '#999999',
+      'fill-outline-width': 3,
+      'fill-antialias': true
+    }
+  })
+
+  // insertLayer({
+  //   id: 'zcta-demand-fill',
+  //           type: 'fill',
+  //           source: './zcta_base_boundaries.geojson',
+  //           paint: {
+  //               'fill-color': colorExpression,
+  //               // Dynamically change opacity based on interactive feature-state hooks
+  //               'fill-opacity': [
+  //                   'case',
+  //                   ['boolean', ['feature-state', 'hover'], false],
+  //                   0.95, // Fully opaque on hover
+  //                   0.70  // Translucent baseline resting rate
+  //               ]
+  //           }
+  // });
+
+  // insertLayer({
+  //    id: 'zcta-demand-outline',
+  //           type: 'line',
+  //           source: 'zcta-boundaries',
+  //           paint: {
+  //               'line-color': [
+  //                   'case',
+  //                   ['boolean', ['feature-state', 'hover'], false],
+  //                   '#222222', // Dark prominent stroke on hover
+  //                   '#ffffff'  // Subtle white baseline border boundary
+  //               ],
+  //               'line-width': [
+  //                   'case',
+  //                   ['boolean', ['feature-state', 'hover'], false],
+  //                   2.5, // Thick stroke on active hover
+  //                   0.5  // Fine line resting width
+  //               ]
+  //           }
+  // });
 
   const control = document.createElement('div');
   control.className = 'mapboxgl-ctrl mapboxgl-ctrl-group';
@@ -211,11 +303,11 @@ map.on('load', () => {
     );
   });
 
-  // Classify density based on avg_far using percentiles
-  // Range observed: 0.13 to 18.55, divided into thirds
+  // Classify density based on avg_far terciles
+  // Top third begins around 1.82, middle third begins around 0.65
   const classifyDensity = (avgFar) => {
-    if (avgFar < 6.2) return 'low';
-    if (avgFar < 12.35) return 'medium';
+    if (avgFar < 0.65) return 'low';
+    if (avgFar < 1.82) return 'medium';
     return 'high';
   };
 
@@ -258,3 +350,32 @@ map.on('load', () => {
     map.getCanvas().style.cursor = '';
   });
 });
+
+  const classifyBikeDemand = (distributed_trips) => {
+    if (distributed_trips < 16) return 'low';
+    if (distributed_trips <38) return 'medium';
+    return 'high';
+  };
+
+   map.on('click', 'bike-trips', (event) => {
+    if (event.features.length > 0) {
+      const feature = event.features[0];
+      const distributedTrips = feature.properties.distributed_trips || 0;
+      const demand = classifyBikeDemand(distributedTrips);
+      const demandText = demand.charAt(0).toUpperCase() + demand.slice(1);
+
+      const coordinates = event.lngLat;
+      const htmlContent = `
+        <div style="font-family: sans-serif; font-size: 14px;">
+          This zip code is <b>${demandText}</b> bike demand.
+          <div style="margin-top: 8px; font-size: 12px; color: #666;">
+            Distributed Trips: ${distributedTrips.toFixed(2)}
+          </div>
+        </div>
+      `;
+
+      popup.setLngLat(coordinates)
+        .setHTML(htmlContent)
+        .addTo(map);
+    }
+  });
