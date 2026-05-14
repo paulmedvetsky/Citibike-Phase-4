@@ -6,11 +6,49 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Citibike Phase 4</title>
     <link rel="stylesheet" href="style.css" />
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.23.1/mapbox-gl.css" rel="stylesheet" />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.23.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="map"></div>
+
+    <div id="map-header">
+      <div id="map-header-title">Citibike Phase 4</div>
+      <div id="map-header-subtitle"><i>Where should it go...?</i></div>
+    </div>
+
+    <div id="welcome-overlay">
+      <div id="welcome-card">
+        <h1>Welcome!</h1>
+        <p>
+          CitiBike is North America's largest bike share system. Thousands of
+          stations serve tens of thousands of bikes, which serve millions of
+          riders across four boroughs with ridership on the rise.
+        </p>
+        <p>However, there are still large areas of the city that are not served by CitiBike.</p>
+        <p>This map uses bike trip data, land use density, and bike route information to show which neighborhoods are primed for the next round of expansion!</p>
+        <p>
+          Explore the map to see CitiBike stations, bike routes, land use
+          density, and bike trip demand across the city.
+        </p>
+        <p>
+          Use the checkboxes to toggle different layers on the map and gain
+          insights into bike share usage and urban density.
+        </p>
+        <button id="welcome-close">Let's Build More Bikes!</button>
+      </div>
+    </div>
+
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.23.1/mapbox-gl.js"></script>
     <script src="script.js"></script>
+    <script>
+      document
+        .getElementById("welcome-close")
+        .addEventListener("click", function () {
+          document.getElementById("welcome-overlay").style.display = "none";
+        });
+    </script>
   </body>
 </html>

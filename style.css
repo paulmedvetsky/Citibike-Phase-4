@@ -18,3 +18,200 @@ body {
   width: 100%;
   height: 100vh;
 }
+
+#welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(120, 120, 120, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#welcome-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  padding: 48px 56px;
+  max-width: 520px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#welcome-card h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+#welcome-card p {
+  font-size: 1rem;
+  color: #444;
+  line-height: 1.6;
+}
+
+#welcome-close {
+  margin-top: 12px;
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: #2e8b4e;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  align-self: center;
+  transition: background 0.2s ease;
+}
+
+#welcome-close:hover {
+  background: #246b3c;
+}
+
+/* Map Header */
+#map-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  padding: 18px 28px 14px;
+  background: rgba(230, 230, 230, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom-right-radius: 12px;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+#map-header-title {
+  font-size: 50px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+#map-header-subtitle {
+  font-size: 18px;
+  color: #444;
+  margin-top: 4px;
+}
+
+/* Legend / Layer Control */
+.legend-control {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  min-width: 230px;
+  max-width: 295px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+}
+
+.legend-title {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1.04rem;
+  font-weight: 700;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  font-size: 1.24rem;
+  margin-bottom: 8px;
+  cursor: pointer;
+  gap: 7px;
+  line-height: 1.2;
+}
+
+.legend-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 26px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legend-static {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 1.04rem;
+  padding-top: 8px;
+  border-top: 1px solid #ddd;
+  margin-top: 4px;
+}
+
+.legend-static-sub {
+  font-size: 0.85rem;
+  color: #555;
+  margin-top: 2px;
+}
+
+/* Info icon with hover tooltip */
+.layer-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid #555;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  color: #555;
+  position: relative;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  background: #333;
+  color: #fff;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 9999;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: normal;
+  width: 180px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.layer-info-icon:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
