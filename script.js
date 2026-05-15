@@ -44,27 +44,27 @@ map.on('load', async () => {
 
   map.addSource('bike-routes', {
     type: 'geojson',
-    data: './New_York_City_Bike_Routes_20260512.geojson'
+    data: './data/New_York_City_Bike_Routes_20260512.geojson'
   });
 
   map.addSource('outside-citibike', {
     type: 'geojson',
-    data: './ZIP_MINUS_CITIBIKE_4326.geojson'
+    data: './data/ZIP_MINUS_CITIBIKE_4326.geojson'
   });
 
   map.addSource('citibike-stations', {
     type: 'geojson',
-    data: './citibike_locations_4326.geojson'
+    data: './data/citibike_locations_4326.geojson'
   });
 
   map.addSource('land-use', {
     type: 'geojson',
-    data: './land_use_by_zip.geojson'
+    data: './data/land_use_by_zip.geojson'
   });
 
   map.addSource('bike-trips', {
     type: 'geojson',
-    data: './non_citibike_bike_demand.geojson'
+    data: './data/non_citibike_bike_demand.geojson'
   });
 
   map.addSource('selected-zip', {
@@ -521,8 +521,8 @@ map.on('load', async () => {
   // Fetch both datasets to identify qualifying zip codes for CitiBike expansion
   try {
     const [bikeTripsData, landUseData] = await Promise.all([
-      fetch('./non_citibike_bike_demand.geojson').then(r => r.json()),
-      fetch('./land_use_by_zip.geojson').then(r => r.json())
+      fetch('./data/non_citibike_bike_demand.geojson').then(r => r.json()),
+      fetch('./data/land_use_by_zip.geojson').then(r => r.json())
     ]);
 
     const landUseLookup = {};
