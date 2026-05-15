@@ -5,7 +5,7 @@ const map = new mapboxgl.Map({
   style: 'mapbox://styles/mapbox/standard',
   config: {
     basemap: {
-      lightPreset: "day",
+      lightPreset: "night",
       theme: "faded",
       showAdminBoundaries: false,
       showRoadLabels: false,
@@ -32,14 +32,14 @@ function updateHeaderOpacity() {
   const zoom = map.getZoom();
   const opacity = Math.max(0, Math.min(1, 1 - (zoom - MIN_ZOOM) / (FADE_END_ZOOM - MIN_ZOOM)));
   const header = document.getElementById('map-header');
-  if (header) {
-    header.style.opacity = opacity;
-  }
+  if (header) header.style.opacity = opacity;
+  const countBox = document.getElementById('expansion-count-box');
+  if (countBox) countBox.style.opacity = opacity;
 }
 
 map.on('zoom', updateHeaderOpacity);
 
-map.on('load', () => {
+map.on('load', async () => {
   updateHeaderOpacity();
 
   map.addSource('bike-routes', {
@@ -72,6 +72,11 @@ map.on('load', () => {
     data: { type: 'FeatureCollection', features: [] }
   });
 
+  map.addSource('expansion-candidates', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] }
+  });
+
   const firstSymbolLayer = map.getStyle().layers.find(l => l.type === 'symbol');
   const insertBeforeLayer = firstSymbolLayer ? firstSymbolLayer.id : undefined;
   const insertLayer = (spec) => {
@@ -83,11 +88,13 @@ map.on('load', () => {
     id: 'outside-citibike-fill',
     type: 'fill',
     source: 'outside-citibike',
+    // emissive-strength: 1,
     slot: 'middle',
     layout: { visibility: 'visible' },
     paint: {
       'fill-color': '#ffe566',
-      'fill-opacity': 0.16,
+      'fill-opacity': 0.06,
+      'fill-emissive-strength': 2,
       'fill-antialias': true
     }
   });
@@ -102,7 +109,7 @@ map.on('load', () => {
     paint: {
       'line-color': '#ffe066',
       'line-width': 2.5,
-      'line-opacity': 0.90
+      'line-opacity': 0.30
     }
   });
 
@@ -123,7 +130,12 @@ map.on('load', () => {
     nycZipcodeFilter,
     ['!=', ['get', 'zipcode'], '10803'],
     ['!=', ['get', 'zipcode'], '11021'],
-    ['!=', ['get', 'zipcode'], '11040']
+    ['!=', ['get', 'zipcode'], '11040'],
+    ['!=', ['get', 'zipcode'], '11096'],
+    ['!=', ['get', 'zipcode'], '11001'],
+    ['!=', ['get', 'zipcode'], '11003'],
+    ['!=', ['get', 'zipcode'], '11580'],
+    ['!=', ['get', 'zipcode'], '11581'],
   ];
 
   // Bike routes — bright green, pops well against the dark night basemap
@@ -131,10 +143,11 @@ map.on('load', () => {
     id: 'bike-routes-line',
     type: 'line',
     source: 'bike-routes',
-    slot: 'middle',
+    slot: 'top',
     layout: { visibility: 'none' },
     paint: {
       'line-color': '#44ff6b',
+      'line-emissive-strength': 1.5,
       'line-width': 1.25,
       'line-opacity': 0.88,
       'line-join': 'round',
@@ -177,20 +190,22 @@ map.on('load', () => {
         31.51, 0.85
       ],
       'fill-outline-color': 'rgba(255, 255, 255, 0.35)',
+      'fill-emissive-strength': 1.5,
       'fill-antialias': true
     }
   });
 
-  // CitiBike stations — original gray style
+  // CitiBike stations — updated with Citibike Blue coloring and increased in size.
   insertLayer({
     id: 'citibike-stations-circle',
     type: 'circle',
     source: 'citibike-stations',
     slot: 'top',
-    layout: { visibility: 'none' },
+    layout: { visibility: 'visible' },
     paint: {
-      'circle-color': 'rgba(220, 215, 215, 0.95)',
-      'circle-radius': 2.5,
+      'circle-color': '#174DA4',
+      'circle-emissive-strength': 1.5,
+      'circle-radius': 5,
       'circle-stroke-color': 'rgba(255, 255, 255, 0.9)',
       'circle-stroke-width': 0.5,
       'circle-opacity': 0.88
@@ -231,6 +246,7 @@ map.on('load', () => {
         1024, 0.84
       ],
       'fill-outline-color': 'rgba(255, 255, 255, 0.35)',
+      'fill-emissive-strength': 1.5,
       'fill-antialias': true
     }
   });
@@ -243,10 +259,45 @@ map.on('load', () => {
     slot: 'top',
     paint: {
       'line-color': '#FFEC3D',
+      'line-emissive-strength': 2,
       'line-width': 3.5,
       'line-opacity': 0.98
     }
   });
+
+  // Expansion candidate ZIP codes — animated blue dashed outline
+  map.addLayer({
+    id: 'expansion-candidates-line',
+    type: 'line',
+    source: 'expansion-candidates',
+    slot: 'top',
+    layout: { visibility: 'none' },
+    paint: {
+      'line-color': '#00aaff',
+      'line-width': 3,
+      'line-emissive-strength': 2,
+      'line-dasharray': [0, 4, 3],
+      'line-opacity': 0.95
+    }
+  });
+
+  // Animate dashes by cycling through offset-shifted dash arrays
+  const dashArraySequence = [
+    [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5],
+    [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
+    [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5],
+    [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1], [0, 3.5, 3, 0.5]
+  ];
+  let dashStep = 0;
+  function animateDashes(timestamp) {
+    const newStep = Math.floor((timestamp / 50) % dashArraySequence.length);
+    if (newStep !== dashStep) {
+      map.setPaintProperty('expansion-candidates-line', 'line-dasharray', dashArraySequence[newStep]);
+      dashStep = newStep;
+    }
+    requestAnimationFrame(animateDashes);
+  }
+  requestAnimationFrame(animateDashes);
 
   // --- Legend / Layer Control ---
   const control = document.createElement('div');
@@ -263,7 +314,7 @@ map.on('load', () => {
     </label>
 
     <label class="legend-row">
-      <input type="checkbox" id="toggle-citibike-stations" class="legend-checkbox" style="accent-color:#dcdcdc;" />
+      <input type="checkbox" id="toggle-citibike-stations" class="legend-checkbox" style="accent-color:#dcdcdc;" checked />
       <span class="legend-swatch" style="width:13px;height:13px;border-radius:50%;background:rgba(220,215,215,0.95);box-shadow:0 0 0 1.5px #bbb;"></span>
       CitiBike Stations
     </label>
@@ -272,7 +323,7 @@ map.on('load', () => {
       <input type="checkbox" id="toggle-land-use" class="legend-checkbox" style="accent-color:#ff8f00;" />
       <span class="legend-swatch" style="background:linear-gradient(to right,#fffce8,#d32f2f);border:1px solid #ccc;"></span>
       Land Use Density
-      <span class="layer-info-icon">?<span class="tooltip-text">Placeholder text — fill in later about land use density.</span></span>
+      <span class="layer-info-icon">?<span class="tooltip-text">Land use density is measured by the average Built Floor Area Ratio (FAR - the ratio of total built floor area to the total lot area) within each zip code. The higher the average FAR, the denser the zip code.</span></span>
     </label>
     <div class="legend-range-grid">
       <div class="legend-range-row"><span class="legend-range-swatch" style="background:#fff176;"></span><span>Avg FAR &lt; 1</span></div>
@@ -285,7 +336,7 @@ map.on('load', () => {
       <input type="checkbox" id="toggle-bike-trips" class="legend-checkbox" style="accent-color:#00d4e6;" />
       <span class="legend-swatch" style="background:linear-gradient(to right,#e8ffff,#00627a);border:1px solid #ccc;"></span>
       Bike Trip Demand
-      <span class="layer-info-icon">?<span class="tooltip-text">Placeholder text — fill in later about bike trip demand.</span></span>
+      <span class="layer-info-icon">?<span class="tooltip-text">Bike trip demand is measured by the number of trips originating from each zip code. This data comes from NYCDOT's 2024 Citywide Mobility Survey, which measures trips using a far larger geography than zip codes. Trips in those larger geographies are distributed based on the size of the zip code.</span></span>
     </label>
     <div class="legend-range-grid">
       <div class="legend-range-row"><span class="legend-range-swatch" style="background:#80ffff;"></span><span>&lt; 16 trips</span></div>
@@ -293,6 +344,16 @@ map.on('load', () => {
       <div class="legend-range-row"><span class="legend-range-swatch" style="background:#00b8d9;"></span><span>64 – 256 trips</span></div>
       <div class="legend-range-row"><span class="legend-range-swatch" style="background:#00627a;"></span><span>&gt; 256 trips</span></div>
     </div>
+
+    <label class="legend-row">
+      <input type="checkbox" id="toggle-expansion-candidates" class="legend-checkbox" style="accent-color:#00aaff;" />
+      <svg width="26" height="14" style="flex-shrink:0;vertical-align:middle;">
+        <rect x="1" y="1" width="24" height="12" fill="none" stroke="#00aaff" stroke-width="2" stroke-dasharray="4 2">
+          <animate attributeName="stroke-dashoffset" from="0" to="-6" dur="0.7s" repeatCount="indefinite"/>
+        </rect>
+      </svg>
+      Expansion Candidates
+    </label>
 
     <div class="legend-static">
       <span class="legend-swatch" style="background:#ffe566;border:2px solid #ffe066;flex-shrink:0;"></span>
@@ -305,7 +366,7 @@ map.on('load', () => {
 
   // Update outside-citibike opacity based on whether any layer is active
   function updateOutsideCitibikeOpacity() {
-    const anyActive = ['toggle-bike-routes', 'toggle-citibike-stations', 'toggle-land-use', 'toggle-bike-trips']
+    const anyActive = ['toggle-bike-routes', 'toggle-citibike-stations', 'toggle-land-use', 'toggle-bike-trips', 'toggle-expansion-candidates']
       .some(id => document.getElementById(id)?.checked);
     map.setPaintProperty('outside-citibike-fill', 'fill-opacity', anyActive ? 0.06 : 0.16);
     map.setPaintProperty('outside-citibike-line', 'line-opacity', anyActive ? 0.30 : 0.90);
@@ -330,6 +391,19 @@ map.on('load', () => {
     map.setLayoutProperty('bike-trips', 'visibility', e.target.checked ? 'visible' : 'none');
     updateOutsideCitibikeOpacity();
   });
+
+  document.getElementById('toggle-expansion-candidates').addEventListener('change', (e) => {
+    map.setLayoutProperty('expansion-candidates-line', 'visibility', e.target.checked ? 'visible' : 'none');
+    updateOutsideCitibikeOpacity();
+  });
+
+  // Expansion count box — shown below the map header
+  const expansionCountBox = document.createElement('div');
+  expansionCountBox.id = 'expansion-count-box';
+  expansionCountBox.innerHTML = 'There are <strong id="expansion-count">…</strong> zip codes where CitiBike could expand!';
+  document.body.appendChild(expansionCountBox);
+  const { bottom: headerBottom } = document.getElementById('map-header').getBoundingClientRect();
+  expansionCountBox.style.top = `${headerBottom + 8}px`;
 
   // Classification helpers
   const classifyDensity = (avgFar) => {
@@ -408,6 +482,17 @@ map.on('load', () => {
       </div>`;
     }
 
+    if (byLayer['bike-trips'] && byLayer['land-use-fill']) {
+      const trips = byLayer['bike-trips'].properties.distributed_trips || 0;
+      const avgFar = byLayer['land-use-fill'].properties.avg_far || 0;
+      const qualifies = trips >= 16 && avgFar >= 0.65;
+      html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #ddd;font-size:12px;${qualifies ? 'color:#1a6e2e;font-weight:600;' : 'color:#555;'}">
+        ${qualifies
+          ? '✓ This zip code has the right combination of density and bike trips to support CitiBike expansion!'
+          : 'This zip code unfortunately does <b>not</b> have the right combination of density and bike trips.'}
+      </div>`;
+    }
+
     html += '</div>';
 
     popup.setLngLat(event.lngLat).setHTML(html).addTo(map);
@@ -430,4 +515,38 @@ map.on('load', () => {
     map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
     map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
   });
+
+  updateOutsideCitibikeOpacity();
+
+  // Fetch both datasets to identify qualifying zip codes for CitiBike expansion
+  try {
+    const [bikeTripsData, landUseData] = await Promise.all([
+      fetch('./non_citibike_bike_demand.geojson').then(r => r.json()),
+      fetch('./land_use_by_zip.geojson').then(r => r.json())
+    ]);
+
+    const landUseLookup = {};
+    for (const f of landUseData.features) {
+      const zip = String(f.properties.zipcode || '');
+      if (zip) landUseLookup[zip] = f.properties.avg_far || 0;
+    }
+
+    const qualifyingFeatures = bikeTripsData.features.filter(f => {
+      const trips = f.properties.distributed_trips || 0;
+      const zip = String(f.properties.zcta5ce20 || '');
+      const avgFar = landUseLookup[zip];
+      return avgFar !== undefined && trips >= 16 && avgFar >= 0.65;
+    });
+
+    map.getSource('expansion-candidates').setData({
+      type: 'FeatureCollection',
+      features: qualifyingFeatures
+    });
+
+    const countEl = document.getElementById('expansion-count');
+    if (countEl) countEl.textContent = qualifyingFeatures.length;
+
+  } catch (err) {
+    console.error('Failed to compute expansion candidates:', err);
+  }
 });
